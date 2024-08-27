@@ -10,7 +10,7 @@ To clone the repository and run the Spring Boot Microservices project, follow th
 
 1. **Clone the Repository**:
    ```bash
-   [git clone https://github.com/Srivathsav-max/management-service.git](https://github.com/Srivathsav-max/management-service.git)
+   git clone https://github.com/Srivathsav-max/management-service.git
    cd management-service
    ```
 
