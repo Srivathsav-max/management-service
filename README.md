@@ -2,7 +2,7 @@
 # Spring Boot Microservices Project
 
 > **Operating System:** macOS,
-> **Database Used:** Mongodb
+> **Database Used:** Mongodb.
 
 ## 🚀 Getting Started
 
