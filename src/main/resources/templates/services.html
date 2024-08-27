@@ -58,7 +58,7 @@
         <tbody th:each="node : ${nodes}">
             <tr>
                 <td><input type="checkbox" class="row-checkbox" th:data-id="${node.nodeId}"/></td>
-                <td th:text="${node.nodeId}">Node ID</td>
+                <td class="clickable" th:text="${node.nodeId}">Node ID</td>
                 <td class="clickable" th:text="${node.nodeName}">Node Name</td>
                 <td th:text="${node.description}">Description</td>
                 <td th:text="${node.memo}">Memo</td>
