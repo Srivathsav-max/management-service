@@ -22,7 +22,7 @@ public class webController {
     @Autowired
     private serviceRepo repo;
 
-    @GetMapping("/web")
+    @GetMapping("/")
     public String showServices(Model model) {
         model.addAttribute("nodes", repo.findAll());
         return "services"; 
