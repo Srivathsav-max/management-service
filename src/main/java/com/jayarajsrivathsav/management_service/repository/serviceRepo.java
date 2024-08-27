@@ -7,13 +7,9 @@ import com.jayarajsrivathsav.management_service.model.Service;
 
 import java.util.List;
 
-import java.util.Optional;
+
 
 public interface serviceRepo extends MongoRepository<Service, String> {
-
-    static Optional<Service> findByUniqueKey(String nodeId) {
-        throw new UnsupportedOperationException("Unimplemented method 'findByUniqueKey'");
-    }
 
     @Query("{ $text: { $search: ?0 } }")
     static

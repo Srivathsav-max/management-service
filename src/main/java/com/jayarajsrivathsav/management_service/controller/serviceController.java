@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Optional;
 import com.jayarajsrivathsav.management_service.model.Service;
 import com.jayarajsrivathsav.management_service.repository.serviceRepo;
+
+import io.micrometer.common.util.StringUtils;
 
 @RestController
 @RequestMapping("/api/services")
@@ -95,24 +98,33 @@ public class serviceController {
             boolean headerSkipped = false;
 
             while ((line = fileReader.readLine()) != null) {
-               
+                if (line.trim().isEmpty()) continue; 
+                
                 if (!headerSkipped) {
                     headerSkipped = true;
                     continue;
                 }
 
                 String[] data = line.split(",");
-        
-                Optional<Service> existingService = serviceRepo.findByUniqueKey(data[0]); // Assuming data[0] is a unique identifier
-                if (!existingService.isPresent()) {
-                    Service service = new Service(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-                    services.add(service);
+                if (data.length != 8) {
+                    continue; 
                 }
+
+                
+                Service service = new Service(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+                services.add(service);
             }
-            repo.saveAll(services);
-            return ResponseEntity.ok("Uploaded and saved " + services.size() + " services (duplicates not included)");
+
+            
+            if (!services.isEmpty()) {
+                repo.saveAll(services);
+                return ResponseEntity.ok("Uploaded and saved " + services.size() + " services");
+            } else {
+                return ResponseEntity.badRequest().body("No valid data found to import.");
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing file");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing file: " + e.getMessage());
         }
     }
 
