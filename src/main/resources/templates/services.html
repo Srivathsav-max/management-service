@@ -11,8 +11,10 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         .clickable { color: #0066cc; cursor: pointer; }
-        .actions { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .actions { justify-content: space-between; margin-bottom: 10px; }
         .actions button { padding: 5px 10px; }
+        #editNodeModal { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid #ccc; z-index: 1000; }
+        .modal-background { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
     </style>
 </head>
 <body>
@@ -33,31 +35,29 @@
     </div>
     
     <div class="actions">
-        <div>
-            <button><i class="fas fa-pencil-alt"></i></button>
-            <button><i class="far fa-copy"></i></button>
-            <button id="exportCsvButton"><i class="fas fa-download"></i>Export to CSV</button>
-            <button><i class="fas fa-ellipsis-v"></i></button>
-        </div>
+        <button id="editNodeButton"><i class="fas fa-pencil-alt"></i> </button>
+        <button id="exportCsvButton"><i class="fas fa-download"></i> </button>
+        <button id="deleteNodeButton"><i class="fas fa-trash"></i> </button>
+        <button id="refreshButton"><i class="fas fa-sync-alt"></i></button>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th><input type="checkbox" /></th>
-                <th>Node ID <i class="fas fa-sort"></i></th>
-                <th>Node name <i class="fas fa-sort"></i></th>
+                <th><input type="checkbox" id="selectAll"/></th>
+                <th>Node ID</th>
+                <th>Node name</th>
                 <th>Description</th>
                 <th>Memo</th>
                 <th>Node type</th>
-                <th>Parent node group name <i class="fas fa-sort"></i></th>
-                <th>Parent node group ID <i class="fas fa-sort"></i></th>
-                <th>Parent node ID <i class="fas fa-sort"></i></th>
+                <th>Parent node group name</th>
+                <th>Parent node group ID</th>
+                <th>Parent node group Type</th>
             </tr>
         </thead>
         <tbody th:each="node : ${nodes}">
             <tr>
-                <td><input type="checkbox" /></td>
+                <td><input type="checkbox" class="row-checkbox" th:data-id="${node.nodeId}"/></td>
                 <td th:text="${node.nodeId}">Node ID</td>
                 <td class="clickable" th:text="${node.nodeName}">Node Name</td>
                 <td th:text="${node.description}">Description</td>
@@ -70,52 +70,113 @@
         </tbody>
     </table>
 
+    <!-- Modal for editing node details -->
+    <div class="modal-background" onclick="$('.modal-background, #editNodeModal').hide();"></div>
+    <div id="editNodeModal">
+        <input type="text" id="editNodeId" hidden>
+        <input type="text" id="editNodeName" placeholder="Node Name">
+        <input type="text" id="editDescription" placeholder="Description">
+        <input type="text" id="editMemo" placeholder="Memo">
+        <input type="text" id="editNodeType" placeholder="Node Type">
+        <input type="text" id="editParentNodeGroupName" placeholder="Parent Node Group Name">
+        <input type="text" id="editParentNodeGroupId" placeholder="Parent Node Group ID">
+        <input type="text" id="editParentNodeGroupType" placeholder="Parent Node Group Type">
+        <button id="saveChangesButton">Save Changes</button>
+        <button onclick="$('.modal-background, #editNodeModal').hide();">Cancel</button>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#searchInput').on('keyup', function() {
-                updateTable($(this).val(), $('#filter').val());
+            $('#editNodeButton').click(function() {
+                var selectedCheckbox = $('input.row-checkbox:checked');
+                if (selectedCheckbox.length > 0) {
+                    var nodeId = selectedCheckbox.data('id');
+                    loadEditData(nodeId);
+                    $('.modal-background, #editNodeModal').show();
+                } else {
+                    alert('Please select a node to edit.');
+                }
             });
 
-            $('#filter').on('change', function() {
-                updateTable($('#searchInput').val(), $(this).val());
+            $('#saveChangesButton').on('click', submitNodeEdit);
+
+            $('#deleteNodeButton').click(function() {
+                var selectedCheckbox = $('input.row-checkbox:checked');
+                if (selectedCheckbox.length > 0) {
+                    var nodeId = selectedCheckbox.data('id');
+                    if(confirm("Are you sure you want to delete this node?")) {
+                        deleteNode(nodeId);
+                    }
+                } else {
+                    alert('Please select a node to delete.');
+                }
             });
+        
+            function loadEditData(nodeId) {
+                $.get('/api/services/' + nodeId, function(data) {
+                    $('#editNodeId').val(data.nodeId);
+                    $('#editNodeName').val(data.nodeName);
+                    $('#editDescription').val(data.description);
+                    $('#editMemo').val(data.memo);
+                    $('#editNodeType').val(data.nodeType);
+                    $('#editParentNodeGroupName').val(data.parentNodeGroupName);
+                    $('#editParentNodeGroupId').val(data.parentNodeGroupId);
+                    $('#editParentNodeGroupType').val(data.parentNodeGroupType);
+                });
+            }
+
+            function deleteNode(nodeId) {
+                $.ajax({
+                    url: '/api/services/' + nodeId,
+                    type: 'DELETE',
+                    success: function(response) {
+                        alert('Node deleted successfully!');
+                        $('input.row-checkbox[data-id="' + nodeId + '"]').closest('tr').remove();
+                    },
+                    error: function() {
+                        alert('Error deleting node.');
+                    }
+                });
+            }
+        
+            function submitNodeEdit() {
+                var nodeId = $('#editNodeId').val();
+                var updatedData = {
+                    nodeName: $('#editNodeName').val(),
+                    description: $('#editDescription').val(),
+                    memo: $('#editMemo').val(),
+                    nodeType: $('#editNodeType').val(),
+                    parentNodeGroupName: $('#editParentNodeGroupName').val(),
+                    parentNodeGroupId: $('#editParentNodeGroupId').val(),
+                    parentNodeGroupType: $('#editParentNodeGroupType').val()
+                };
+        
+                $.ajax({
+                    url: '/api/services/' + nodeId,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(updatedData),
+                    success: function(response) {
+                        alert('Node updated successfully!');
+                        $('.modal-background, #editNodeModal').hide();
+                        // Optionally refresh your table or data view here
+                    },
+                    error: function() {
+                        alert('Error updating node.');
+                    }
+                });
+            }
+        
+        
             $('#exportCsvButton').click(function() {
                 window.location.href = '/export-csv';
             });
 
-            function updateTable(search, filter) {
-                $.ajax({
-                    url: '/api/services/fetch',
-                    type: 'GET',
-                    data: {
-                        search: search,
-                        filterBy: 'nodeType', 
-                        filterValue: filter
-                    },
-                    success: function(data) {
-                        var rows = '';
-                        data.forEach(function(node) {
-                            rows += '<tr>' +
-                                    '<td><input type="checkbox" /></td>' +
-                                    '<td>' + node.nodeId + '</td>' +
-                                    '<td class="clickable">' + node.nodeName + '</td>' +
-                                    '<td>' + node.description + '</td>' +
-                                    '<td>' + node.memo + '</td>' +
-                                    '<td>' + node.nodeType + '</td>' +
-                                    '<td>' + node.parentNodeGroupName + '</td>' +
-                                    '<td>' + node.parentNodeGroupId + '</td>' +
-                                    '<td>' + node.parentNodeGroupType + '</td>' +
-                                    '</tr>';
-                        });
-                        $('tbody').html(rows);
-                    },
-                    error: function() {
-                        alert('Error fetching data');
-                    }
-                });
-            }
+            $('#refreshButton').click(function() {
+                location.reload();
+            });
         });
-    </script>
+        </script>
 </body>
 </html>

@@ -19,7 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import java.util.Optional;
 import com.jayarajsrivathsav.management_service.model.Service;
 import com.jayarajsrivathsav.management_service.repository.serviceRepo;
@@ -113,6 +114,18 @@ public class serviceController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing file");
         }
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<Service>> searchServices(@RequestParam String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return null;
+        }
+        List<Service> foundServices = serviceRepo.findByKeyword(keyword);
+        if (foundServices.isEmpty()) {
+            return ResponseEntity.noContent().build();  
+        }
+        return ResponseEntity.ok(foundServices);
     }
 
 }
